@@ -1,0 +1,100 @@
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  postgres-products:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: kunal123
+      POSTGRES_DB: products_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_products:/var/lib/postgresql/data
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d products_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-customers:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: "user"
+      POSTGRES_PASSWORD: kunal123
+      POSTGRES_DB: customers_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_customers:/var/lib/postgresql/data
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d customers_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  product-service:
+    build: ./product-service
+    ports:
+      - "3001:3001"
+    environment:
+      DB_HOST: postgres-products
+      DB_PORT: 5432
+      DB_USER: user
+      DB_PASSWORD: kunal123
+      DB_NAME: products_db
+      NODE_ENV: development
+      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672"
+    networks:
+      - ecommerce-net
+    depends_on:
+      postgres-products:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  customer-service:
+    build: ./customer-service
+    image:  node:18.20.8-alpine
+    ports:
+      - "3002:3002"
+    environment:
+       DB_HOST: postgres-customers
+       DB_PORT: 5432
+       DB_USER: "user"
+       DB_PASSWORD: kunal123
+       DB_NAME: customers_db
+       NODE_OPTIONS: development
+       RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672"
+       JWT_SECRET: "your_jwt_secret_key"
+    networks:
+      - ecommerce-net
+    depends_on:
+      postgres-customers:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  pg_products:
+  pg_customers:
+
+networks:
+  ecommerce-net:
+    driver: bridge
