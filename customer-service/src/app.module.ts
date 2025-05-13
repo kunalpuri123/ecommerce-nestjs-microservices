@@ -7,7 +7,7 @@ import { Customer } from './customers/entities/customer.entity/customer.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
-imports: [
+  imports: [
     ConfigModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -26,17 +26,27 @@ imports: [
         } : false
       }),
       inject: [ConfigService],
-
     }),
-    ClientsModule.register([{
-      name: 'CUSTOMER_SERVICE',
-      transport: Transport.RMQ,
-      options: {
-        urls: ["amqp://guest:guest@rabbitmq:5672"],
-        queue: 'customer_queue',
-        queueOptions: { durable: true }
+ClientsModule.registerAsync([{
+  name: 'ORDER_SERVICE',
+  imports: [ConfigModule],
+  useFactory: (configService: ConfigService) => ({
+    transport: Transport.RMQ,
+    options: {
+      urls: [configService.get<string>('RABBITMQ_URL', 'amqp://localhost:5672')], // Fallback value
+      queue: 'order_created',
+      queueOptions: {
+        durable: true,
+        arguments: { 
+          'x-queue-type': 'classic' as const,
+          'x-message-ttl': 3600000 // Example additional argument
+        }
       }
-    }])
+    }
+  }),
+  inject: [ConfigService]
+}]),
+    CustomersModule
   ],
 })
 export class AppModule {}

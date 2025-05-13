@@ -27,16 +27,29 @@ export class CustomersService {
     await this.customersRepository.delete(id);
   }
 
-  async updateOrderStats(customerId: string, amount: number): Promise<void> {
-    await this.customersRepository
-      .createQueryBuilder()
-      .update(Customer)
-      .set({
-        totalOrders: () => 'totalOrders + 1',
-        totalSpent: () => `totalSpent + ${amount}`,
-        lastOrderAt: new Date(),
-      })
-      .where('id = :id', { id: customerId })
-      .execute();
+  async updateOrderStats(customerId: string, orderData: any) {
+  const existingCustomer = await this.customersRepository.findOneBy({ id: customerId });
+
+  if (existingCustomer) {
+    await this.customersRepository.update(
+      { id: customerId },
+      {
+        totalOrders: () => `"totalOrders" + 1`,
+        totalSpent: () => `"totalSpent" + ${orderData.total}`,
+        lastOrderAt: new Date(orderData.createdAt)
+      }
+    );
+  } else {
+    const newCustomer = this.customersRepository.create({
+      id: orderData.customerId,
+      name: orderData.name || 'Unknown',
+      email: orderData.email || 'unknown@example.com',
+      totalOrders: 1,
+      totalSpent: orderData.total,
+      lastOrderAt: new Date(orderData.createdAt)
+    });
+    await this.customersRepository.save(newCustomer);
   }
+}
+
 }

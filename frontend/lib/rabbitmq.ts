@@ -1,16 +1,30 @@
 // lib/rabbitmq.ts
-import amqp from "amqplib";
+import * as amqp from 'amqplib';
 
-let connection: amqp.Connection | null = null;
+// Define proper TypeScript interfaces
+interface RabbitMQConnection {
+  connection: amqp.Connection;
+  channel: amqp.Channel;
+}
 
-export async function getRabbitMQChannel() {
+let connection: amqp.Connection;
+let channel: amqp.Channel;
+
+export async function connectRabbitMQ(): Promise<RabbitMQConnection> {
   if (!connection) {
-    // Use the Docker hostname or environment variable
-    connection = await amqp.connect("amqp://guest:guest@localhost:5672"); 
+    connection = await amqp.connect(
+      process.env.RABBITMQ_URL || 'amqp://guest:guest@rabbitmq:5672'
+    );
+    
+    // Create channel with proper typing
+    channel = await connection.createChannel();
+    
+    // Assert queue with correct options
+    await channel.assertQueue('order_queue', {
+      durable: true,
+      arguments: { 'x-queue-type': 'classic' }
+    });
   }
 
-  const channel = await connection.createChannel();
-  await channel.assertQueue("orders", { durable: true });
-
-  return channel;
+  return { connection, channel };
 }

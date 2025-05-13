@@ -23,6 +23,7 @@ async createOrder(dto: CreateOrderDto): Promise<Order> {
     customerId: dto.customerId,
     items: dto.items,
     total: dto.total,
+
   });
 
   const saved = await this.ordersRepository.save(order);

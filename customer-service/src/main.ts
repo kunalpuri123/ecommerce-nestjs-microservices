@@ -11,23 +11,15 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: {
       urls: ['amqp://guest:guest@rabbitmq:5672'],  // the same broker
-      queue: 'order_queue',                        // must match the queue name you emit into
+      queue: 'order_created',                        // must match the queue name you emit into
       queueOptions: { durable: true },
     },
   });
-  app.connectMicroservice({
-  transport: Transport.RMQ,
-  options: {
-    urls: ['amqp://guest:guest@rabbitmq:5672'],
-    queue: 'order_created',
-    queueOptions: { durable: true },
-  },
-});
+
 await app.startAllMicroservices();
 
 
-  // 3) Start the RMQ microservice so @EventPattern handlers are registered
-  await app.startAllMicroservices();
+  
 
   // 4) (Optional) start the HTTP server too, if you expose REST endpoints
   await app.listen(3002);

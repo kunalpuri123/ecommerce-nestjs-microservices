@@ -1,7 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { MessagePattern } from '@nestjs/microservices';
 import { CustomersService } from './customers/customers.service';
+import { EventPattern, Payload } from '@nestjs/microservices';
 
 @Controller()
 export class AppController {
@@ -15,10 +16,16 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  // Add RabbitMQ message handler
-  @MessagePattern('order_created')
-  async handleOrderCreated(@Payload() data: { customerId: string; amount: number }) {
-    await this.customersService.updateOrderStats(data.customerId, data.amount);
-    return { status: 'Customer stats updated' };
+  @EventPattern('order_created')
+async handleOrderCreated(@Payload() data: any) {
+  console.log('🔥 Received RAW DATA:', data);
+  // Add explicit validation
+  if (!data?.customerId) {
+    console.error('💥 Invalid order data:', data);
+    return;
   }
+  await this.customersService.updateOrderStats(data.customerId, data);
+}
+
+
 }
