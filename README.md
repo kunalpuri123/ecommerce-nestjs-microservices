@@ -387,7 +387,7 @@ For production implementations, you should:
 - Add pagination parameters
 - Include API versioning
 - Add response caching headers
-![image](https://github.com/user-attachments/assets/64721a45-2736-478f-af32-73697ac7235c)
+
 
 
 ## 📄 License
